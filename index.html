@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moustache Lab Synth & Sequencer</title>
+  <title>Moustache Lab Synth & Spectrum Visualizer</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -39,7 +39,7 @@
 
     .app-container {
       width: 100%;
-      max-width: 580px;
+      max-width: 600px;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 20px;
@@ -51,7 +51,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       padding-bottom: 16px;
       border-bottom: 1px solid var(--border);
     }
@@ -128,7 +128,42 @@
       align-items: center;
     }
 
-    /* Waveform selector */
+    /* Canvas Visualizer */
+    .visualizer-container {
+      position: relative;
+      width: 100%;
+      height: 120px;
+      background: #08090f;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+    }
+
+    #visualizer {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .viz-mode-btn {
+      background: rgba(18, 21, 32, 0.8);
+      border: 1px solid var(--border);
+      color: var(--accent-cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .viz-mode-btn:hover {
+      border-color: var(--accent-cyan);
+    }
+
+    /* Waveform Grid */
     .waveform-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -205,11 +240,6 @@
       background: var(--accent-cyan);
       cursor: pointer;
       box-shadow: 0 0 8px var(--accent-cyan);
-      transition: transform 0.1s;
-    }
-
-    input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
     }
 
     /* Synth Pads */
@@ -230,30 +260,12 @@
       font-weight: 700;
       cursor: pointer;
       transition: all 0.1s;
-      position: relative;
-      overflow: hidden;
     }
 
-    .pad::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 3px;
-      background: var(--accent-cyan);
-      opacity: 0;
-      transition: opacity 0.1s;
-    }
-
-    .pad:hover {
-      border-color: var(--accent-cyan);
-    }
-
+    .pad:hover { border-color: var(--accent-cyan); }
     .pad:active {
       background: rgba(0, 240, 255, 0.2);
       transform: scale(0.96);
-    }
-
-    .pad:active::after {
-      opacity: 1;
     }
 
     /* Sequencer */
@@ -269,7 +281,6 @@
       font-family: 'Orbitron', sans-serif;
       font-size: 11px;
       color: var(--text-muted);
-      letter-spacing: 0.5px;
     }
 
     .steps {
@@ -313,9 +324,18 @@
   <div class="header">
     <div class="title-group">
       <h1>MOUSTACHE LAB</h1>
-      <span class="badge">V2.0 FX</span>
+      <span class="badge">V3.0 VIZ</span>
     </div>
     <button class="btn-transport" id="btn-play" onclick="togglePlay()">POWER / PLAY</button>
+  </div>
+
+  <!-- Visualizador Canvas -->
+  <div class="visualizer-container">
+    <div style="position: absolute; top: 10px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: center; z-index: 2; pointer-events: none;">
+      <span style="font-family: 'Orbitron', sans-serif; font-size: 10px; color: var(--text-muted); letter-spacing: 1px;">ESPECTRO / WAVEFORM</span>
+      <button class="viz-mode-btn" style="pointer-events: auto;" onclick="toggleVizMode()">MODO: WAVE</button>
+    </div>
+    <canvas id="visualizer"></canvas>
   </div>
 
   <!-- Sintetizador & Filtro Panel -->
@@ -325,7 +345,6 @@
       <span id="synth-status" style="color: var(--accent-cyan);">TRIANGLE</span>
     </div>
 
-    <!-- Selector de Forma de Onda -->
     <div class="waveform-grid">
       <button class="btn-wave active" onclick="setWaveform('triangle', this)">TRIANGLE</button>
       <button class="btn-wave" onclick="setWaveform('sawtooth', this)">SAW</button>
@@ -333,7 +352,6 @@
       <button class="btn-wave" onclick="setWaveform('sine', this)">SINE</button>
     </div>
 
-    <!-- Controles de Filtro y Resonancia -->
     <div class="sliders-grid">
       <div class="slider-card">
         <div class="slider-header">
@@ -352,7 +370,7 @@
     </div>
   </div>
 
-  <!-- Panel de Efectos Reverb & Delay -->
+  <!-- Panel de Efectos -->
   <div class="panel-section">
     <div class="panel-title">Efectos Espaciales</div>
     <div class="sliders-grid">
@@ -373,7 +391,7 @@
     </div>
   </div>
 
-  <!-- Teclado / Pads -->
+  <!-- Pads del Sintetizador -->
   <div class="panel-section">
     <div class="panel-title">Pads del Sintetizador</div>
     <div class="grid-synth">
@@ -388,7 +406,7 @@
     </div>
   </div>
 
-  <!-- Secuenciador de Batería -->
+  <!-- Secuenciador -->
   <div class="panel-section">
     <div class="panel-title">Caja de Ritmos (4 Pasos)</div>
     <div id="sequencer">
@@ -422,45 +440,32 @@
     </div>
   </div>
 
-  <div class="footer-note">Diseñado con Web Audio API & Tone.js</div>
+  <div class="footer-note">Diseñado con Web Audio API, Tone.js & Canvas Visualizer</div>
 </div>
 
 <script>
-  // 1. Cadena de Señal Audio: Synth -> Filter -> Delay -> Reverb -> Destination
-  const reverb = new Tone.Reverb({
-    decay: 3.5,
-    wet: 0.2
-  }).toDestination();
+  // 1. Analizadores Audio (Waveform + FFT)
+  const waveformFFT = new Tone.Waveform(512);
+  const fftAnalysis = new Tone.FFT(64);
 
-  const delay = new Tone.FeedbackDelay({
-    delayTime: "8n.",
-    feedback: 0.35,
-    wet: 0.2
-  }).connect(reverb);
+  // 2. Cadena Audio Master: All FX -> Waveform/FFT -> Destination
+  const masterBus = new Tone.Gain(1).connect(waveformFFT).connect(fftAnalysis).toDestination();
 
-  const filter = new Tone.Filter({
-    frequency: 2000,
-    type: "lowpass",
-    rolloff: -12,
-    Q: 1.0
-  }).connect(delay);
+  const reverb = new Tone.Reverb({ decay: 3.5, wet: 0.2 }).connect(masterBus);
+  const delay = new Tone.FeedbackDelay({ delayTime: "8n.", feedback: 0.35, wet: 0.2 }).connect(reverb);
+  const filter = new Tone.Filter({ frequency: 2000, type: "lowpass", rolloff: -12, Q: 1.0 }).connect(delay);
 
   const synth = new Tone.Synth({
     oscillator: { type: 'triangle' },
-    envelope: {
-      attack: 0.01,
-      decay: 0.2,
-      sustain: 0.5,
-      release: 1
-    }
+    envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1 }
   }).connect(filter);
 
-  // Sintetizadores para Percusión
-  const kick = new Tone.MembraneSynth().toDestination();
+  // Baterías enviadas a Master Bus
+  const kick = new Tone.MembraneSynth().connect(masterBus);
   const snare = new Tone.NoiseSynth({
     noise: { type: 'white' },
     envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
-  }).toDestination();
+  }).connect(masterBus);
   const hihat = new Tone.MetalSynth({
     frequency: 200,
     envelope: { attack: 0.001, decay: 0.08, release: 0.01 },
@@ -468,12 +473,86 @@
     modulationIndex: 32,
     resonance: 4000,
     octaves: 1.5
-  }).toDestination();
+  }).connect(masterBus);
 
   let isPlaying = false;
   let currentStep = 0;
+  let vizMode = 'wave'; // 'wave' | 'fft'
 
-  // Cambiar Forma de Onda
+  // Canvas Setup
+  const canvas = document.getElementById('visualizer');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function toggleVizMode() {
+    vizMode = vizMode === 'wave' ? 'fft' : 'wave';
+    document.querySelector('.viz-mode-btn').textContent = `MODO: ${vizMode.toUpperCase()}`;
+  }
+
+  // Render Loop en Canvas
+  function drawVisualizer() {
+    requestAnimationFrame(drawVisualizer);
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Fondo tenue para efecto de trail/estela
+    ctx.fillStyle = 'rgba(8, 9, 15, 0.25)';
+    ctx.fillRect(0, 0, width, height);
+
+    if (vizMode === 'wave') {
+      // Forma de Onda (Osciloscopio)
+      const values = waveformFFT.getValue();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#00f0ff';
+      ctx.beginPath();
+
+      const sliceWidth = width / values.length;
+      let x = 0;
+
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        const y = (v + 1) / 2 * height;
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+
+        x += sliceWidth;
+      }
+      ctx.stroke();
+
+    } else {
+      // Espectro de Frecuencias (Barras Neón)
+      const values = fftAnalysis.getValue();
+      const barWidth = (width / values.length) * 1.5;
+      let x = 0;
+
+      for (let i = 0; i < values.length; i++) {
+        let barHeight = (values[i] + 100) * 1.2;
+        if (barHeight < 0) barHeight = 2;
+
+        const gradient = ctx.createLinearGradient(0, height, 0, 0);
+        gradient.addColorStop(0, '#7000ff');
+        gradient.addColorStop(0.5, '#00f0ff');
+        gradient.addColorStop(1, '#ff007f');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, height - barHeight, barWidth - 2, barHeight);
+
+        x += barWidth;
+      }
+    }
+  }
+
+  drawVisualizer();
+
+  // Controls & Playback
   function setWaveform(type, btnElement) {
     synth.oscillator.type = type;
     document.querySelectorAll('.btn-wave').forEach(b => b.classList.remove('active'));
@@ -481,27 +560,23 @@
     document.getElementById('synth-status').textContent = type.toUpperCase();
   }
 
-  // Actualizar Controles de Filtro y FX en tiempo real
   function updateControls() {
     const cutoff = parseFloat(document.getElementById('cutoff').value);
     const resonance = parseFloat(document.getElementById('resonance').value);
     const reverbMix = parseFloat(document.getElementById('reverb-mix').value);
     const delayMix = parseFloat(document.getElementById('delay-mix').value);
 
-    // Aplicar a los nodos audio mediante suavizado (rampTo)
     filter.frequency.rampTo(cutoff, 0.05);
     filter.Q.value = resonance;
     reverb.wet.rampTo(reverbMix, 0.05);
     delay.wet.rampTo(delayMix, 0.05);
 
-    // Actualizar Textos
     document.getElementById('cutoff-val').textContent = cutoff >= 1000 ? (cutoff / 1000).toFixed(1) + ' kHz' : Math.round(cutoff) + ' Hz';
     document.getElementById('res-val').textContent = resonance.toFixed(1);
     document.getElementById('reverb-val').textContent = Math.round(reverbMix * 100) + '%';
     document.getElementById('delay-val').textContent = Math.round(delayMix * 100) + '%';
   }
 
-  // Activar Audio & Bucle del Secuenciador
   async function togglePlay() {
     await Tone.start();
     const btnPlay = document.getElementById('btn-play');
@@ -519,25 +594,20 @@
       isPlaying = false;
       btnPlay.textContent = 'POWER / PLAY';
       btnPlay.classList.remove('playing');
-      
-      // Quitar highlights de los pasos
       document.querySelectorAll('.step').forEach(s => s.classList.remove('playing-step'));
       currentStep = 0;
     }
   }
 
-  // Reproducción de notas individuales en Pads
   function playNote(note) {
     Tone.start();
     synth.triggerAttackRelease(note, "8n");
   }
 
-  // Toggle de la matriz de pasos
   function toggleStep(element) {
     element.classList.toggle('active');
   }
 
-  // Bucle del secuenciador
   function repeat(time) {
     let stepIndex = currentStep % 4;
     const rows = document.querySelectorAll('.sequencer-row');
@@ -546,7 +616,6 @@
       const drumType = row.getAttribute('data-drum');
       const steps = row.querySelectorAll('.step');
       
-      // Indicador visual de paso actual
       steps.forEach((s, idx) => {
         if (idx === stepIndex) s.classList.add('playing-step');
         else s.classList.remove('playing-step');
