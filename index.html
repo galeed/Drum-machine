@@ -3,140 +3,459 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sintetizador & Drum Machine</title>
+  <title>Moustache Lab Synth & Sequencer</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
     :root {
-      --bg: #0f111a;
-      --card: #1a1d2e;
-      --accent: #00f0ff;
-      --pink: #ff007f;
-      --text: #ffffff;
+      --bg: #0a0b10;
+      --card: #121520;
+      --panel: #181c2b;
+      --accent-cyan: #00f0ff;
+      --accent-magenta: #ff007f;
+      --accent-purple: #7000ff;
+      --text-main: #e2e8f0;
+      --text-muted: #64748b;
+      --border: #232a3d;
     }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
     body {
       background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, sans-serif;
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
       display: flex;
       justify-content: center;
-      padding: 20px;
+      align-items: center;
+      min-height: 100vh;
       margin: 0;
+      padding: 20px;
     }
-    .container {
+
+    .app-container {
       width: 100%;
-      max-width: 500px;
+      max-width: 580px;
       background: var(--card);
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.05);
     }
-    h2 { margin-top: 0; color: var(--accent); text-align: center; }
-    .controls { text-align: center; margin-bottom: 24px; }
-    button.btn-main {
-      background: var(--accent);
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-group h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 20px;
+      margin: 0;
+      letter-spacing: 1.5px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge {
+      font-size: 11px;
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .btn-transport {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
       border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: bold;
+      color: #000;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      padding: 10px 22px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 13px;
+      letter-spacing: 1px;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
     }
-    
-    /* Pads Sintetizador */
+
+    .btn-transport:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+    }
+
+    .btn-transport.playing {
+      background: linear-gradient(135deg, var(--accent-magenta), #ff4d4d);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+    }
+
+    .panel-section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Waveform selector */
+    .waveform-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .btn-wave {
+      background: #111422;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 0;
+      border-radius: 8px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-wave:hover {
+      border-color: var(--accent-cyan);
+      color: var(--text-main);
+    }
+
+    .btn-wave.active {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    }
+
+    /* Sliders Grid */
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .slider-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .slider-val {
+      color: var(--accent-cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #0d101a;
+      border-radius: 3px;
+      outline: none;
+      border: 1px solid var(--border);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--accent-cyan);
+      transition: transform 0.1s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* Synth Pads */
     .grid-synth {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      margin-bottom: 24px;
     }
+
     .pad {
-      background: #282c47;
-      border: 2px solid var(--accent);
-      color: var(--accent);
-      padding: 20px 0;
-      border-radius: 8px;
-      font-weight: bold;
+      background: #111422;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 16px 0;
+      border-radius: 10px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.1s;
+      position: relative;
+      overflow: hidden;
     }
-    .pad:active { background: var(--accent); color: #000; }
 
-    /* Secuenciador Ritmos */
+    .pad::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: var(--accent-cyan);
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+
+    .pad:hover {
+      border-color: var(--accent-cyan);
+    }
+
+    .pad:active {
+      background: rgba(0, 240, 255, 0.2);
+      transform: scale(0.96);
+    }
+
+    .pad:active::after {
+      opacity: 1;
+    }
+
+    /* Sequencer */
     .sequencer-row {
       display: flex;
       align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .row-label {
+      width: 55px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
-      margin-bottom: 10px;
-    }
-    .row-label { width: 60px; font-size: 14px; font-weight: bold; }
-    .steps { display: flex; gap: 8px; flex: 1; }
-    .step {
       flex: 1;
-      height: 36px;
-      background: #282c47;
-      border: 1px solid #444;
-      border-radius: 6px;
-      cursor: pointer;
     }
-    .step.active { background: var(--pink); border-color: var(--pink); }
+
+    .step {
+      height: 38px;
+      background: #111422;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .step.active {
+      background: var(--accent-magenta);
+      border-color: var(--accent-magenta);
+      box-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
+    }
+
+    .step.playing-step {
+      border-color: #ffffff;
+      transform: scale(1.05);
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>Sinte & Beat Maker</h2>
-  
-  <div class="controls">
-    <button class="btn-main" onclick="togglePlay()">Iniciar Audio / Play</button>
+<div class="app-container">
+  <div class="header">
+    <div class="title-group">
+      <h1>MOUSTACHE LAB</h1>
+      <span class="badge">V2.0 FX</span>
+    </div>
+    <button class="btn-transport" id="btn-play" onclick="togglePlay()">POWER / PLAY</button>
   </div>
 
-  <div class="grid-synth">
-    <button class="pad" onclick="playNote('C4')">C4</button>
-    <button class="pad" onclick="playNote('D4')">D4</button>
-    <button class="pad" onclick="playNote('E4')">E4</button>
-    <button class="pad" onclick="playNote('F4')">F4</button>
-    <button class="pad" onclick="playNote('G4')">G4</button>
-    <button class="pad" onclick="playNote('A4')">A4</button>
-    <button class="pad" onclick="playNote('B4')">B4</button>
-    <button class="pad" onclick="playNote('C5')">C5</button>
+  <!-- Sintetizador & Filtro Panel -->
+  <div class="panel-section">
+    <div class="panel-title">
+      <span>Oscilador & Filtro Lowpass</span>
+      <span id="synth-status" style="color: var(--accent-cyan);">TRIANGLE</span>
+    </div>
+
+    <!-- Selector de Forma de Onda -->
+    <div class="waveform-grid">
+      <button class="btn-wave active" onclick="setWaveform('triangle', this)">TRIANGLE</button>
+      <button class="btn-wave" onclick="setWaveform('sawtooth', this)">SAW</button>
+      <button class="btn-wave" onclick="setWaveform('square', this)">SQUARE</button>
+      <button class="btn-wave" onclick="setWaveform('sine', this)">SINE</button>
+    </div>
+
+    <!-- Controles de Filtro y Resonancia -->
+    <div class="sliders-grid">
+      <div class="slider-card">
+        <div class="slider-header">
+          <span>Cutoff (LPF)</span>
+          <span id="cutoff-val" class="slider-val">2000 Hz</span>
+        </div>
+        <input type="range" id="cutoff" min="100" max="10000" step="10" value="2000" oninput="updateControls()">
+      </div>
+      <div class="slider-card">
+        <div class="slider-header">
+          <span>Resonancia (Q)</span>
+          <span id="res-val" class="slider-val">1.0</span>
+        </div>
+        <input type="range" id="resonance" min="0.1" max="15" step="0.1" value="1.0" oninput="updateControls()">
+      </div>
+    </div>
   </div>
 
-  <div id="sequencer">
-    <div class="sequencer-row" data-drum="kick">
-      <span class="row-label">Kick</span>
-      <div class="steps">
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
+  <!-- Panel de Efectos Reverb & Delay -->
+  <div class="panel-section">
+    <div class="panel-title">Efectos Espaciales</div>
+    <div class="sliders-grid">
+      <div class="slider-card">
+        <div class="slider-header">
+          <span>Reverb Mix</span>
+          <span id="reverb-val" class="slider-val">20%</span>
+        </div>
+        <input type="range" id="reverb-mix" min="0" max="1" step="0.01" value="0.2" oninput="updateControls()">
       </div>
-    </div>
-    <div class="sequencer-row" data-drum="snare">
-      <span class="row-label">Snare</span>
-      <div class="steps">
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
-      </div>
-    </div>
-    <div class="sequencer-row" data-drum="hihat">
-      <span class="row-label">HiHat</span>
-      <div class="steps">
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
-        <div class="step" onclick="toggleStep(this)"></div>
+      <div class="slider-card">
+        <div class="slider-header">
+          <span>Delay Mix</span>
+          <span id="delay-val" class="slider-val">20%</span>
+        </div>
+        <input type="range" id="delay-mix" min="0" max="1" step="0.01" value="0.2" oninput="updateControls()">
       </div>
     </div>
   </div>
+
+  <!-- Teclado / Pads -->
+  <div class="panel-section">
+    <div class="panel-title">Pads del Sintetizador</div>
+    <div class="grid-synth">
+      <button class="pad" onclick="playNote('C4')">C4</button>
+      <button class="pad" onclick="playNote('D4')">D4</button>
+      <button class="pad" onclick="playNote('E4')">E4</button>
+      <button class="pad" onclick="playNote('F4')">F4</button>
+      <button class="pad" onclick="playNote('G4')">G4</button>
+      <button class="pad" onclick="playNote('A4')">A4</button>
+      <button class="pad" onclick="playNote('B4')">B4</button>
+      <button class="pad" onclick="playNote('C5')">C5</button>
+    </div>
+  </div>
+
+  <!-- Secuenciador de Batería -->
+  <div class="panel-section">
+    <div class="panel-title">Caja de Ritmos (4 Pasos)</div>
+    <div id="sequencer">
+      <div class="sequencer-row" data-drum="kick">
+        <span class="row-label">KICK</span>
+        <div class="steps">
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+        </div>
+      </div>
+      <div class="sequencer-row" data-drum="snare">
+        <span class="row-label">SNARE</span>
+        <div class="steps">
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+        </div>
+      </div>
+      <div class="sequencer-row" data-drum="hihat">
+        <span class="row-label">HIHAT</span>
+        <div class="steps">
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+          <div class="step" onclick="toggleStep(this)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">Diseñado con Web Audio API & Tone.js</div>
 </div>
 
 <script>
-  // Sintetizador para las notas
-  const synth = new Tone.Synth().toDestination();
+  // 1. Cadena de Señal Audio: Synth -> Filter -> Delay -> Reverb -> Destination
+  const reverb = new Tone.Reverb({
+    decay: 3.5,
+    wet: 0.2
+  }).toDestination();
 
-  // Sintetizadores sintéticos para la batería
+  const delay = new Tone.FeedbackDelay({
+    delayTime: "8n.",
+    feedback: 0.35,
+    wet: 0.2
+  }).connect(reverb);
+
+  const filter = new Tone.Filter({
+    frequency: 2000,
+    type: "lowpass",
+    rolloff: -12,
+    Q: 1.0
+  }).connect(delay);
+
+  const synth = new Tone.Synth({
+    oscillator: { type: 'triangle' },
+    envelope: {
+      attack: 0.01,
+      decay: 0.2,
+      sustain: 0.5,
+      release: 1
+    }
+  }).connect(filter);
+
+  // Sintetizadores para Percusión
   const kick = new Tone.MembraneSynth().toDestination();
   const snare = new Tone.NoiseSynth({
     noise: { type: 'white' },
@@ -144,7 +463,7 @@
   }).toDestination();
   const hihat = new Tone.MetalSynth({
     frequency: 200,
-    envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
+    envelope: { attack: 0.001, decay: 0.08, release: 0.01 },
     harmonicity: 5.1,
     modulationIndex: 32,
     resonance: 4000,
@@ -154,41 +473,87 @@
   let isPlaying = false;
   let currentStep = 0;
 
-  // Activar contexto de audio y reproductor en bucle
+  // Cambiar Forma de Onda
+  function setWaveform(type, btnElement) {
+    synth.oscillator.type = type;
+    document.querySelectorAll('.btn-wave').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+    document.getElementById('synth-status').textContent = type.toUpperCase();
+  }
+
+  // Actualizar Controles de Filtro y FX en tiempo real
+  function updateControls() {
+    const cutoff = parseFloat(document.getElementById('cutoff').value);
+    const resonance = parseFloat(document.getElementById('resonance').value);
+    const reverbMix = parseFloat(document.getElementById('reverb-mix').value);
+    const delayMix = parseFloat(document.getElementById('delay-mix').value);
+
+    // Aplicar a los nodos audio mediante suavizado (rampTo)
+    filter.frequency.rampTo(cutoff, 0.05);
+    filter.Q.value = resonance;
+    reverb.wet.rampTo(reverbMix, 0.05);
+    delay.wet.rampTo(delayMix, 0.05);
+
+    // Actualizar Textos
+    document.getElementById('cutoff-val').textContent = cutoff >= 1000 ? (cutoff / 1000).toFixed(1) + ' kHz' : Math.round(cutoff) + ' Hz';
+    document.getElementById('res-val').textContent = resonance.toFixed(1);
+    document.getElementById('reverb-val').textContent = Math.round(reverbMix * 100) + '%';
+    document.getElementById('delay-val').textContent = Math.round(delayMix * 100) + '%';
+  }
+
+  // Activar Audio & Bucle del Secuenciador
   async function togglePlay() {
     await Tone.start();
+    const btnPlay = document.getElementById('btn-play');
+
     if (!isPlaying) {
-      Tone.Transport.bpm.value = 120;
+      Tone.Transport.bpm.value = 124;
       Tone.Transport.scheduleRepeat(repeat, "8n");
       Tone.Transport.start();
       isPlaying = true;
+      btnPlay.textContent = 'STOP';
+      btnPlay.classList.add('playing');
     } else {
       Tone.Transport.stop();
+      Tone.Transport.cancel();
       isPlaying = false;
+      btnPlay.textContent = 'POWER / PLAY';
+      btnPlay.classList.remove('playing');
+      
+      // Quitar highlights de los pasos
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('playing-step'));
+      currentStep = 0;
     }
   }
 
-  // Tocar una nota individual con el sintetizador
+  // Reproducción de notas individuales en Pads
   function playNote(note) {
     Tone.start();
     synth.triggerAttackRelease(note, "8n");
   }
 
-  // Activar/desactivar pasos de la caja de ritmos
+  // Toggle de la matriz de pasos
   function toggleStep(element) {
     element.classList.toggle('active');
   }
 
-  // Bucle secuenciador de 4 pasos
+  // Bucle del secuenciador
   function repeat(time) {
     let stepIndex = currentStep % 4;
     const rows = document.querySelectorAll('.sequencer-row');
 
     rows.forEach(row => {
       const drumType = row.getAttribute('data-drum');
-      const step = row.querySelectorAll('.step')[stepIndex];
+      const steps = row.querySelectorAll('.step');
+      
+      // Indicador visual de paso actual
+      steps.forEach((s, idx) => {
+        if (idx === stepIndex) s.classList.add('playing-step');
+        else s.classList.remove('playing-step');
+      });
 
-      if (step.classList.contains('active')) {
+      const currentStepEl = steps[stepIndex];
+      if (currentStepEl.classList.contains('active')) {
         if (drumType === 'kick') kick.triggerAttackRelease("C1", "8n", time);
         if (drumType === 'snare') snare.triggerAttackRelease("8n", time);
         if (drumType === 'hihat') hihat.triggerAttackRelease("16n", time);
