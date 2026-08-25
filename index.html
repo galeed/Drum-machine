@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sintetizador & Drum Machine</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <style>
+    :root {
+      --bg: #0f111a;
+      --card: #1a1d2e;
+      --accent: #00f0ff;
+      --pink: #ff007f;
+      --text: #ffffff;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: var(--card);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    h2 { margin-top: 0; color: var(--accent); text-align: center; }
+    .controls { text-align: center; margin-bottom: 24px; }
+    button.btn-main {
+      background: var(--accent);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    /* Pads Sintetizador */
+    .grid-synth {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .pad {
+      background: #282c47;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      padding: 20px 0;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .pad:active { background: var(--accent); color: #000; }
+
+    /* Secuenciador Ritmos */
+    .sequencer-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .row-label { width: 60px; font-size: 14px; font-weight: bold; }
+    .steps { display: flex; gap: 8px; flex: 1; }
+    .step {
+      flex: 1;
+      height: 36px;
+      background: #282c47;
+      border: 1px solid #444;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .step.active { background: var(--pink); border-color: var(--pink); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Sinte & Beat Maker</h2>
+  
+  <div class="controls">
+    <button class="btn-main" onclick="togglePlay()">Iniciar Audio / Play</button>
+  </div>
+
+  <div class="grid-synth">
+    <button class="pad" onclick="playNote('C4')">C4</button>
+    <button class="pad" onclick="playNote('D4')">D4</button>
+    <button class="pad" onclick="playNote('E4')">E4</button>
+    <button class="pad" onclick="playNote('F4')">F4</button>
+    <button class="pad" onclick="playNote('G4')">G4</button>
+    <button class="pad" onclick="playNote('A4')">A4</button>
+    <button class="pad" onclick="playNote('B4')">B4</button>
+    <button class="pad" onclick="playNote('C5')">C5</button>
+  </div>
+
+  <div id="sequencer">
+    <div class="sequencer-row" data-drum="kick">
+      <span class="row-label">Kick</span>
+      <div class="steps">
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+      </div>
+    </div>
+    <div class="sequencer-row" data-drum="snare">
+      <span class="row-label">Snare</span>
+      <div class="steps">
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+      </div>
+    </div>
+    <div class="sequencer-row" data-drum="hihat">
+      <span class="row-label">HiHat</span>
+      <div class="steps">
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+        <div class="step" onclick="toggleStep(this)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Sintetizador para las notas
+  const synth = new Tone.Synth().toDestination();
+
+  // Sintetizadores sintéticos para la batería
+  const kick = new Tone.MembraneSynth().toDestination();
+  const snare = new Tone.NoiseSynth({
+    noise: { type: 'white' },
+    envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
+  }).toDestination();
+  const hihat = new Tone.MetalSynth({
+    frequency: 200,
+    envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
+    harmonicity: 5.1,
+    modulationIndex: 32,
+    resonance: 4000,
+    octaves: 1.5
+  }).toDestination();
+
+  let isPlaying = false;
+  let currentStep = 0;
+
+  // Activar contexto de audio y reproductor en bucle
+  async function togglePlay() {
+    await Tone.start();
+    if (!isPlaying) {
+      Tone.Transport.bpm.value = 120;
+      Tone.Transport.scheduleRepeat(repeat, "8n");
+      Tone.Transport.start();
+      isPlaying = true;
+    } else {
+      Tone.Transport.stop();
+      isPlaying = false;
+    }
+  }
+
+  // Tocar una nota individual con el sintetizador
+  function playNote(note) {
+    Tone.start();
+    synth.triggerAttackRelease(note, "8n");
+  }
+
+  // Activar/desactivar pasos de la caja de ritmos
+  function toggleStep(element) {
+    element.classList.toggle('active');
+  }
+
+  // Bucle secuenciador de 4 pasos
+  function repeat(time) {
+    let stepIndex = currentStep % 4;
+    const rows = document.querySelectorAll('.sequencer-row');
+
+    rows.forEach(row => {
+      const drumType = row.getAttribute('data-drum');
+      const step = row.querySelectorAll('.step')[stepIndex];
+
+      if (step.classList.contains('active')) {
+        if (drumType === 'kick') kick.triggerAttackRelease("C1", "8n", time);
+        if (drumType === 'snare') snare.triggerAttackRelease("8n", time);
+        if (drumType === 'hihat') hihat.triggerAttackRelease("16n", time);
+      }
+    });
+
+    currentStep++;
+  }
+</script>
+
+</body>
+</html>
